@@ -8,7 +8,7 @@ on:
 
 env:
   AWS_REGION: us-east-2
-  NODE_VERSION: "24"
+  NODE_VERSION: '24'
   AWS_ROLE_ARN: arn:aws:iam::171233144354:role/GitHubActionsDeployRole
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -33,9 +33,25 @@ jobs:
       - name: Run tests
         run: npm test
 
+  debug-oidc:
+    name: Debug OIDC Token
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Get OIDC token subject
+        run: |
+          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r '.value')
+          echo "Token claims:"
+          echo $TOKEN | cut -d'.' -f2 | base64 -d 2>/dev/null | jq .
+
   deploy-dev:
     name: Deploy to Dev
-    needs: test
+    needs: debug-oidc
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     permissions:
@@ -48,7 +64,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -88,7 +104,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -120,7 +136,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
